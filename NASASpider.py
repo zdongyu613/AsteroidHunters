@@ -25,24 +25,21 @@ def get_neo_data(start_date):
     # category asteroids data by date
     # structure:
     # {
-    #    asteroid_name:{
-    #       estimated_min,estimate_max,is_potentially_hazardous
+    #    aid:{
+    #       estimated_min,estimates_max
     #    },
     # }
     # asteroid data includes:
-    #   name: name of asteroid in NASA data
+    #   aid: asteroid id
     #   estimated_min: estimated minimum diameter in meter
     #   estimated_max: estimated maximum diameter in meter
-    #   is_potentially_hazardous: whether the NEO is potentially hazardous asteroid, in boolean,
-    #       True for hazardous, False for not hazardous
     ##################################################################
     for date in asteroids_all.items():
         for asteroid in date[1]:
-            name = asteroid['name']
-            asteroids_size_data[name] = {}
-            asteroids_size_data[name]['estimated_min'] = asteroid['estimated_diameter']['meters']['estimated_diameter_min']
-            asteroids_size_data[name]['estimated_max'] = asteroid['estimated_diameter']['meters']['estimated_diameter_max']
-            asteroids_size_data[name]['is_potentially_hazardous'] = asteroid['is_potentially_hazardous_asteroid']
+            aid = asteroid['id']
+            asteroids_size_data[aid] = {}
+            asteroids_size_data[aid]['estimated_min'] = asteroid['estimated_diameter']['meters']['estimated_diameter_min']
+            asteroids_size_data[aid]['estimated_max'] = asteroid['estimated_diameter']['meters']['estimated_diameter_max']
 
     return asteroids_size_data
 
@@ -55,8 +52,8 @@ def get_sentry_data(impact_p):
     # impact_p range: [-10,0]
     #
     # data from Sentry System API
-    ipmin = '1e-{}'.format(impact_p)
-    url = 'https://ssd-api.jpl.nasa.gov/sentry.api?ip-min={}'.format(ipmin)
+    ip_min = '1e-{}'.format(impact_p)
+    url = 'https://ssd-api.jpl.nasa.gov/sentry.api?ip-min={}'.format(ip_min)
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
     asteroids_data = json_data['data']
@@ -65,19 +62,19 @@ def get_sentry_data(impact_p):
     #############################################################
     # structure:
     # {
-    #    name:{
-    #       diameter, designation
+    #    aid:{
+    #       diameter, impact_probability
     #    },
     # }
     # asteroid data includes:
-    #   name: asteroid full name
-    #   designation: use to recognize which asteroid it is, often same as name
+    #   aid: asteroid id
+    #   impact_probability: probability of having impact event with earth
     #   diameter: in kilometer
     #############################################################
     for asteroid in asteroids_data:
-        asteroids_size_data[asteroid['fullname']] = {
+        asteroids_size_data[asteroid['id']] = {
             'diameter': asteroid['diameter'],
-            'designation': asteroid['des']
+            'impact_probability': asteroid['ip']
         }
 
     return asteroids_size_data
@@ -87,7 +84,7 @@ def get_ca_data(start_date):
     # start_date form: yyyy-mm-dd
     # Third API using, get rough data of asteroids near earth from the given start date to 60 days later
     # data from NASA NeoWs
-    url = 'https://ssd-api.jpl.nasa.gov/cad.api?date-min={}&body=ALL&fullname=true'.format(start_date)
+    url = 'https://ssd-api.jpl.nasa.gov/cad.api?date-min={}&body=ALL'.format(start_date)
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
     asteroid_data = json_data['data']
@@ -96,21 +93,19 @@ def get_ca_data(start_date):
     ############################################################
     # structure:
     # {
-    #    name:{
-    #       velocity, body, designation
+    #    designation:{
+    #       velocity, body
     #    }
     # }
     # asteroid data includes:
-    #   name: asteroid full name
     #   designation: use to recognize which asteroid it is, often same as name
     #   velocity: velocity relative to the approach body at close approach, in km/s
     #   body: name of the close-approach body, e.g., Earth
     ############################################################
     for asteroid in asteroid_data:
-        asteroid_data[asteroid[11].strip()] = {
+        asteroid_velocity_data[asteroid[0].strip()] = {
             'velocity': asteroid[7],
-            'body': asteroid[10],
-            'designation': asteroid[0]
+            'body': asteroid[10]
         }
 
     return asteroid_velocity_data
@@ -118,7 +113,7 @@ def get_ca_data(start_date):
 
 def store_neo_in_db(dic, db, sheet_name):
     ###############################
-    # receive 2 arguments:
+    # receive 3 arguments:
     #   dic: the neo dictionary you want to store into database
     #       dictionary key should be the unique id of each row
     #   db: database file path
@@ -127,23 +122,104 @@ def store_neo_in_db(dic, db, sheet_name):
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
+    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
+
     cur.execute('''
-    CREATE TABLE IF NOT EXISTS {}(
-        estimated_min ,
-        estimate_max,
-        is_potentially_hazardous
-    )
-    '''.format(sheet_name))
+        CREATE TABLE IF NOT EXISTS {} (
+            aid int,
+            estimated_min float,
+            estimated_max float
+        )
+        '''.format(sheet_name))
+    conn.commit()
+
+    # store one row each time
+    for i in dic.items():
+        cur.execute('''
+            INSERT INTO {} (aid, estimated_min, estimated_max)
+            VALUES ({},{},{});
+            '''.format(sheet_name,
+                       i[0],
+                       i[1]['estimated_min'],
+                       i[1]['estimated_max']))
+        conn.commit()
 
 
+def store_sentry_in_db(dic, db, sheet_name):
+    ###############################
+    # receive 3 arguments:
+    #   dic: the sentry dictionary you want to store into database
+    #       dictionary key should be the unique id of each row
+    #   db: database file path
+    #   sheet_name: name of table in which data stored
+    ###############################
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+
+    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS {} (
+            aid varchar(255),
+            diameter float,
+            impact_probability varchar(255)
+        )
+        '''.format(sheet_name))
+    conn.commit()
+
+    # store one row each time
+    for i in dic.items():
+        cur.execute('''
+            INSERT INTO {} (aid, diameter, impact_probability)
+            VALUES ({},{},{});
+            '''.format(sheet_name,
+                       "'{}'".format(i[0]),
+                       i[1]['diameter'],
+                       i[1]['impact_probability']))
+        conn.commit()
+
+
+def store_cad_in_db(dic, db, sheet_name):
+    ###############################
+    # receive 3 arguments:
+    #   dic: the sentry dictionary you want to store into database
+    #       dictionary key should be the unique id of each row
+    #   db: database file path
+    #   sheet_name: name of table in which data stored
+    ###############################
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+
+    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
+
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS {} (
+            designation varchar(255),
+            velocity float,
+            body varchar(255)
+        )
+        '''.format(sheet_name))
+    conn.commit()
+
+    # store one row each time
+    for i in dic.items():
+        cur.execute('''
+            INSERT INTO {} (designation, velocity, body)
+            VALUES ({},{},{});
+            '''.format(sheet_name,
+                       "'{}'".format(i[0]),
+                       i[1]['velocity'],
+                       "'{}'".format(i[1]['body'])))
+        conn.commit()
 
 
 if __name__ == '__main__':
-    conn = sqlite3.connect(DB)
-    cur = conn.cursor()
-    cur.execute('''
-    CREATE TABLE IF NOT EXISTS test(
-        name TEXT,
-        diameter INT
-    )
-    ''')
+    store_neo_in_db(get_neo_data('2019-09-01'), DB, 'NEO_2019_09_01')
+    store_neo_in_db(get_neo_data('2019-10-01'), DB, 'NEO_2019_10_01')
+
+    store_sentry_in_db(get_sentry_data(6), DB, 'larger_than_1e6')
+    store_sentry_in_db(get_sentry_data(5), DB, 'larger_than_1e5')
+
+    store_cad_in_db(get_ca_data('2018-01-01'), DB, 'CAD_2018_01_01')
+    store_cad_in_db(get_ca_data('2019-03-01'), DB, 'CAD_2019_03_01')
+
