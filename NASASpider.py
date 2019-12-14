@@ -13,9 +13,14 @@ def get_neo_data(start_date, key):
     url = 'https://api.nasa.gov/neo/rest/v1/feed?start_date={}&end_date={}&api_key={}'.format(
         start_date, end_date, key
     )
+    print('Connecting NeoWs...')
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
-    asteroids_all = json_data['near_earth_objects']
+    try:
+        asteroids_all = json_data['near_earth_objects']
+    except KeyError:
+        print('No data received, please check your start date and api key.')
+        return {}
 
     asteroids_size_data = {}
     #################################################################
@@ -38,6 +43,9 @@ def get_neo_data(start_date, key):
             asteroids_size_data[aid]['estimated_min'] = asteroid['estimated_diameter']['meters']['estimated_diameter_min']
             asteroids_size_data[aid]['estimated_max'] = asteroid['estimated_diameter']['meters']['estimated_diameter_max']
 
+    print('NeoWs data successfully collected. Data start from {} to 7 days after.'.format(start_date))
+    print('\n')
+
     return asteroids_size_data
 
 
@@ -51,9 +59,15 @@ def get_sentry_data(impact_p):
     # data from Sentry System API
     ip_min = '1e-{}'.format(impact_p)
     url = 'https://ssd-api.jpl.nasa.gov/sentry.api?ip-min={}'.format(ip_min)
+    print('Connecting Sentry...')
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
-    asteroids_data = json_data['data']
+    try:
+        asteroids_data = json_data['data']
+    except KeyError:
+        print('No data received, please check your impact probability input,'
+              ' which should be the minus log of real probability.')
+        return {}
 
     asteroids_size_data = {}
     #############################################################
@@ -74,17 +88,25 @@ def get_sentry_data(impact_p):
             'impact_probability': asteroid['ip']
         }
 
+    print('Sentry data successfully collected. Asteroid with impact-probability greater than 1e_{}'.format(impact_p))
+    print('\n')
+
     return asteroids_size_data
 
 
 def get_ca_data(start_date):
     # start_date form: yyyy-mm-dd
     # Third API using, get rough data of asteroids near earth from the given start date to 60 days later
-    # data from NASA NeoWs
+    # data from JPL's Small-Body DataBase
     url = 'https://ssd-api.jpl.nasa.gov/cad.api?date-min={}&body=ALL'.format(start_date)
+    print('Connecting SBDB Close-Approach Data...')
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
-    asteroid_data = json_data['data']
+    try:
+        asteroids_data = json_data['data']
+    except KeyError:
+        print('No data received, please check your start date.')
+        return {}
 
     asteroid_velocity_data = {}
     ############################################################
@@ -99,11 +121,14 @@ def get_ca_data(start_date):
     #   velocity: velocity relative to the approach body at close approach, in km/s
     #   body: name of the close-approach body, e.g., Earth
     ############################################################
-    for asteroid in asteroid_data:
+    for asteroid in asteroids_data:
         asteroid_velocity_data[asteroid[0].strip()] = {
             'velocity': asteroid[7],
             'body': asteroid[10]
         }
+
+    print('Close-Approach Data successfully collected. ')
+    print('\n')
 
     return asteroid_velocity_data
 
@@ -116,21 +141,25 @@ def store_neo_in_db(dic, db, sheet_name):
     #   db: database file path
     #   sheet_name: name of table in which data stored
     ###############################
+    print('Connecting database: {}...'.format(db))
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
     cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
 
+    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
-            aid int,
+            aid int UNIQUE,
             estimated_min float,
             estimated_max float
         )
         '''.format(sheet_name))
     conn.commit()
+    print('Success.')
 
     # store one row each time
+    print('Storing NEO data...')
     for i in dic.items():
         cur.execute('''
             INSERT INTO {} (aid, estimated_min, estimated_max)
@@ -140,6 +169,8 @@ def store_neo_in_db(dic, db, sheet_name):
                        i[1]['estimated_min'],
                        i[1]['estimated_max']))
         conn.commit()
+    print('Success.')
+    print('\n')
 
 
 def store_sentry_in_db(dic, db, sheet_name):
@@ -150,21 +181,25 @@ def store_sentry_in_db(dic, db, sheet_name):
     #   db: database file path
     #   sheet_name: name of table in which data stored
     ###############################
+    print('Connecting database: {}...'.format(db))
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
     cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
 
+    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
-            aid varchar(255),
+            aid varchar(255) UNIQUE,
             diameter float,
             impact_probability varchar(255)
         )
         '''.format(sheet_name))
     conn.commit()
+    print('Success.')
 
     # store one row each time
+    print('Storing Sentry data...')
     for i in dic.items():
         cur.execute('''
             INSERT INTO {} (aid, diameter, impact_probability)
@@ -174,7 +209,8 @@ def store_sentry_in_db(dic, db, sheet_name):
                        i[1]['diameter'],
                        i[1]['impact_probability']))
         conn.commit()
-
+    print('Success.')
+    print('\n')
 
 def store_cad_in_db(dic, db, sheet_name):
     ###############################
@@ -184,22 +220,25 @@ def store_cad_in_db(dic, db, sheet_name):
     #   db: database file path
     #   sheet_name: name of table in which data stored
     ###############################
-
+    print('Connecting database: {}...'.format(db))
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
     cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
 
+    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
-            designation varchar(255),
+            designation varchar(255) UNIQUE,
             velocity float,
             body varchar(255)
         )
         '''.format(sheet_name))
     conn.commit()
+    print('Success.')
 
     # store one row each time
+    print('Storing Close-Approach Data...')
     for i in dic.items():
         cur.execute('''
             INSERT INTO {} (designation, velocity, body)
@@ -209,3 +248,5 @@ def store_cad_in_db(dic, db, sheet_name):
                        i[1]['velocity'],
                        "'{}'".format(i[1]['body'])))
         conn.commit()
+    print('Success.')
+    print('\n')
