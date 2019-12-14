@@ -1,20 +1,17 @@
 import requests
 import sqlite3
 import json
-import os
-
-# Global variables
-NEO_API_KEY = 'jvZwakvScvkB3hk3XIAKmoYcQULwIkpPreD7JnHj'
-DB = os.getcwd() + '\Asteroids_NASA.db'
 
 
-def get_neo_data(start_date):
+
+def get_neo_data(start_date, key):
     # date form: yyyy-mm-dd
+    # key: api key
     # First API using, get rough data of asteroids near earth from the given start date to 7 days later
     # data from NASA NeoWs
     end_date = ''
     url = 'https://api.nasa.gov/neo/rest/v1/feed?start_date={}&end_date={}&api_key={}'.format(
-        start_date, end_date, NEO_API_KEY
+        start_date, end_date, key
     )
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
@@ -187,6 +184,7 @@ def store_cad_in_db(dic, db, sheet_name):
     #   db: database file path
     #   sheet_name: name of table in which data stored
     ###############################
+
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
@@ -211,15 +209,3 @@ def store_cad_in_db(dic, db, sheet_name):
                        i[1]['velocity'],
                        "'{}'".format(i[1]['body'])))
         conn.commit()
-
-
-if __name__ == '__main__':
-    store_neo_in_db(get_neo_data('2019-09-01'), DB, 'NEO_2019_09_01')
-    store_neo_in_db(get_neo_data('2019-10-01'), DB, 'NEO_2019_10_01')
-
-    store_sentry_in_db(get_sentry_data(6), DB, 'larger_than_1e6')
-    store_sentry_in_db(get_sentry_data(5), DB, 'larger_than_1e5')
-
-    store_cad_in_db(get_ca_data('2018-01-01'), DB, 'CAD_2018_01_01')
-    store_cad_in_db(get_ca_data('2019-03-01'), DB, 'CAD_2019_03_01')
-
