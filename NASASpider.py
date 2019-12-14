@@ -88,7 +88,7 @@ def get_sentry_data(impact_p):
             'impact_probability': asteroid['ip']
         }
 
-    print('Sentry data successfully collected. Asteroid with impact-probability greater than 1e_{}'.format(impact_p))
+    print('Sentry data successfully collected. Asteroid with impact-probability greater than 1e-{}'.format(impact_p))
     print('\n')
 
     return asteroids_size_data
@@ -212,6 +212,7 @@ def store_sentry_in_db(dic, db, sheet_name):
     print('Success.')
     print('\n')
 
+
 def store_cad_in_db(dic, db, sheet_name):
     ###############################
     # receive 3 arguments:
@@ -250,3 +251,13 @@ def store_cad_in_db(dic, db, sheet_name):
         conn.commit()
     print('Success.')
     print('\n')
+
+
+def calculate_volume_neo(db, sheet_name):
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+
+    data = cur.execute('''
+    SELECT * FROM {};
+    '''.format(sheet_name))
+
