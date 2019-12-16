@@ -1,15 +1,17 @@
 import requests
 import sqlite3
 import json
+import datetime
 
-
+KEY = 'jvZwakvScvkB3hk3XIAKmoYcQULwIkpPreD7JnHj'
 
 def get_neo_data(start_date, key):
-    # date form: yyyy-mm-dd
+    # start date: datetime.date object, datetime.date(year,month,day)
     # key: api key
-    # First API using, get rough data of asteroids near earth from the given start date to 7 days later
+    # First API using, get rough data of asteroids near earth from the given start date to 1 days later
     # data from NASA NeoWs
-    end_date = ''
+    end_date = start_date + datetime.timedelta(days=1)
+
     url = 'https://api.nasa.gov/neo/rest/v1/feed?start_date={}&end_date={}&api_key={}'.format(
         start_date, end_date, key
     )
@@ -19,7 +21,7 @@ def get_neo_data(start_date, key):
     try:
         asteroids_all = json_data['near_earth_objects']
     except KeyError:
-        print('No data received, please check your start date and api key.')
+        print('No data received, please check your start date info and api key.')
         return {}
 
     asteroids_size_data = {}
@@ -43,8 +45,7 @@ def get_neo_data(start_date, key):
             asteroids_size_data[aid]['estimated_min'] = asteroid['estimated_diameter']['meters']['estimated_diameter_min']
             asteroids_size_data[aid]['estimated_max'] = asteroid['estimated_diameter']['meters']['estimated_diameter_max']
 
-    print('NeoWs data successfully collected. Data start from {} to 7 days after.'.format(start_date))
-    print('\n')
+    print('NeoWs data successfully collected. Data start from {} to {}'.format(start_date, end_date))
 
     return asteroids_size_data
 
@@ -95,10 +96,12 @@ def get_sentry_data(impact_p):
 
 
 def get_ca_data(start_date):
-    # start_date form: yyyy-mm-dd
-    # Third API using, get rough data of asteroids near earth from the given start date to 60 days later
+    # start_date: datetime.date object
+    # Third API using, get rough data of asteroids near earth from the given start date to 1 week later
     # data from JPL's Small-Body DataBase
-    url = 'https://ssd-api.jpl.nasa.gov/cad.api?date-min={}&body=ALL'.format(start_date)
+    end_date = start_date + datetime.timedelta(weeks=1)
+
+    url = 'https://ssd-api.jpl.nasa.gov/cad.api?date-min={}&date-max={}&body=ALL'.format(start_date, end_date)
     print('Connecting SBDB Close-Approach Data...')
     raw_data = requests.get(url).text
     json_data = json.loads(raw_data)
@@ -127,7 +130,7 @@ def get_ca_data(start_date):
             'body': asteroid[10]
         }
 
-    print('Close-Approach Data successfully collected. ')
+    print('Close-Approach Data from {} to {} successfully collected.'.format(start_date, end_date))
     print('\n')
 
     return asteroid_velocity_data
@@ -160,6 +163,7 @@ def store_neo_in_db(dic, db, sheet_name):
 
     # store one row each time
     print('Storing NEO data...')
+    count = 0
     for i in dic.items():
         cur.execute('''
             INSERT INTO {} (aid, estimated_min, estimated_max)
@@ -169,7 +173,11 @@ def store_neo_in_db(dic, db, sheet_name):
                        i[1]['estimated_min'],
                        i[1]['estimated_max']))
         conn.commit()
-    print('Success.')
+        count += 1
+        if count >= 20:
+            break
+
+    print('Success, {} items stored.'.format(count))
     print('\n')
 
 
@@ -240,6 +248,7 @@ def store_cad_in_db(dic, db, sheet_name):
 
     # store one row each time
     print('Storing Close-Approach Data...')
+    count = 0
     for i in dic.items():
         cur.execute('''
             INSERT INTO {} (designation, velocity, body)
@@ -249,15 +258,8 @@ def store_cad_in_db(dic, db, sheet_name):
                        i[1]['velocity'],
                        "'{}'".format(i[1]['body'])))
         conn.commit()
-    print('Success.')
-    print('\n')
-
-
-def calculate_volume_neo(db, sheet_name):
-    conn = sqlite3.connect(db)
-    cur = conn.cursor()
-
-    data = cur.execute('''
-    SELECT * FROM {};
-    '''.format(sheet_name))
+        count += 1
+        if count >= 20:
+            break
+    print('Success, {} items stored.'.format(count))
 
