@@ -148,9 +148,6 @@ def store_neo_in_db(dic, db, sheet_name):
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
-    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
-
-    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
             aid int UNIQUE,
@@ -159,14 +156,13 @@ def store_neo_in_db(dic, db, sheet_name):
         )
         '''.format(sheet_name))
     conn.commit()
-    print('Success.')
 
     # store one row each time
     print('Storing NEO data...')
     count = 0
     for i in dic.items():
         cur.execute('''
-            INSERT INTO {} (aid, estimated_min, estimated_max)
+            REPLACE INTO {} (aid, estimated_min, estimated_max)
             VALUES ({},{},{});
             '''.format(sheet_name,
                        i[0],
@@ -177,7 +173,7 @@ def store_neo_in_db(dic, db, sheet_name):
         if count >= 20:
             break
 
-    print('Success, {} items stored.'.format(count))
+    print('Success, {} items stored in {}.'.format(count, sheet_name))
     print('\n')
 
 
@@ -193,9 +189,6 @@ def store_sentry_in_db(dic, db, sheet_name):
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
-    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
-
-    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
             aid varchar(255) UNIQUE,
@@ -204,20 +197,26 @@ def store_sentry_in_db(dic, db, sheet_name):
         )
         '''.format(sheet_name))
     conn.commit()
-    print('Success.')
 
     # store one row each time
     print('Storing Sentry data...')
+    count = 0
     for i in dic.items():
-        cur.execute('''
-            INSERT INTO {} (aid, diameter, impact_probability)
-            VALUES ({},{},{});
-            '''.format(sheet_name,
-                       "'{}'".format(i[0]),
-                       i[1]['diameter'],
-                       i[1]['impact_probability']))
-        conn.commit()
-    print('Success.')
+        try:
+            cur.execute('''
+                INSERT INTO {} (aid, diameter, impact_probability)
+                VALUES ({},{},{});
+                '''.format(sheet_name,
+                           "'{}'".format(i[0]),
+                           i[1]['diameter'],
+                           i[1]['impact_probability']))
+            conn.commit()
+            count += 1
+        except:
+            continue
+        if count >= 20:
+            break
+    print('Success. {} new data stored in {}'.format(count,sheet_name))
     print('\n')
 
 
@@ -233,9 +232,6 @@ def store_cad_in_db(dic, db, sheet_name):
     conn = sqlite3.connect(db)
     cur = conn.cursor()
 
-    cur.execute('DROP TABLE IF EXISTS {}'.format(sheet_name))
-
-    print('Creating new sheet: {}...'.format(sheet_name))
     cur.execute('''
         CREATE TABLE IF NOT EXISTS {} (
             designation varchar(255) UNIQUE,
@@ -244,14 +240,13 @@ def store_cad_in_db(dic, db, sheet_name):
         )
         '''.format(sheet_name))
     conn.commit()
-    print('Success.')
 
     # store one row each time
     print('Storing Close-Approach Data...')
     count = 0
     for i in dic.items():
         cur.execute('''
-            INSERT INTO {} (designation, velocity, body)
+            REPLACE INTO {} (designation, velocity, body)
             VALUES ({},{},{});
             '''.format(sheet_name,
                        "'{}'".format(i[0]),
@@ -261,5 +256,5 @@ def store_cad_in_db(dic, db, sheet_name):
         count += 1
         if count >= 20:
             break
-    print('Success, {} items stored.'.format(count))
+    print('Success, {} items stored in {}.'.format(count, sheet_name))
 
