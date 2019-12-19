@@ -36,6 +36,7 @@ for i in range(8):
     date = start_date_2 + datetime.timedelta(weeks=i)
     store_cad_in_db(get_ca_data(date), DB, 'CAD_2018_10')
 
+
 # calculation and plotting
 def averageVelocity(body):
     count = 0
@@ -44,6 +45,7 @@ def averageVelocity(body):
         total += x[0]
         count += 1
     return total/count
+
 
 conn = sqlite3.connect(DB)
 cur = conn.cursor()
