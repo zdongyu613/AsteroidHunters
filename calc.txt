@@ -1,5 +1,2 @@
-Earth Average Velocities: 10.568303646862471
-Mars Average Velocities: 11.502857172968373
-Mercury Average Velocities: 30.2478884056338
-Moon Average Velocities: 9.463288740728398
-Venus Average Velocities: 16.832178608951182
+Average velocities, in km/s, of close-approach objects in May 2018:{"Mercury": "30.2478884056338", "Venus": "16.832178608951182", "Moon": "9.463288740728398", "Earth": "10.568303646862471", "Mars": "11.502857172968373"}
+Average velocities, in km/s, of close-approach objects in October 2018:{"Mercury": "40.3347806035768", "Venus": "14.167059560115373", "Moon": "9.382096503754697", "Earth": "10.400402753269976", "Mars": "19.4111959331276"}
