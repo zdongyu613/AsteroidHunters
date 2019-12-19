@@ -3,7 +3,6 @@ import sqlite3
 import json
 import datetime
 
-KEY = 'jvZwakvScvkB3hk3XIAKmoYcQULwIkpPreD7JnHj'
 
 def get_neo_data(day_date, key):
     # day_date: datetime.date object, datetime.date(year,month,day)
