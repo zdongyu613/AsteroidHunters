@@ -1,0 +1,5 @@
+Earth Average Velocities: 10.568303646862471
+Mars Average Velocities: 11.502857172968373
+Mercury Average Velocities: 30.2478884056338
+Moon Average Velocities: 9.463288740728398
+Venus Average Velocities: 16.832178608951182
