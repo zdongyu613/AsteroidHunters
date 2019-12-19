@@ -36,29 +36,3 @@ for i in range(8):
     date = start_date_2 + datetime.timedelta(weeks=i)
     store_cad_in_db(get_ca_data(date), DB, 'CAD_2018_10')
 
-# calculation and plotting
-def averageVelocity(body):
-    count = 0
-    total = 0
-    for x in body:
-        total += x[0]
-        count += 1
-    return total/count
-
-conn = sqlite3.connect(DB)
-cur = conn.cursor()
-
-Earth_avg = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Earth'").fetchall()
-Mars_avg = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Mars'").fetchall()
-Mercury_avg = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Mercury'").fetchall()
-Moon_avg = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Moon'").fetchall()
-Venus_avg = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Venus'").fetchall()
-
-outFile = open('calc.txt', 'w+')
-
-outFile.write('Earth Average Velocities: ' + str(averageVelocity(Earth_avg)) + '\n')
-outFile.write('Mars Average Velocities: ' + str(averageVelocity(Mars_avg)) + '\n')
-outFile.write('Mercury Average Velocities: ' + str(averageVelocity(Mercury_avg)) + '\n')
-outFile.write('Moon Average Velocities: ' + str(averageVelocity(Moon_avg)) + '\n')
-outFile.write('Venus Average Velocities: ' + str(averageVelocity(Venus_avg)) + '\n')
-outFile.close()
