@@ -5,15 +5,15 @@ import datetime
 
 KEY = 'jvZwakvScvkB3hk3XIAKmoYcQULwIkpPreD7JnHj'
 
-def get_neo_data(start_date, key):
-    # start date: datetime.date object, datetime.date(year,month,day)
+def get_neo_data(day_date, key):
+    # day_date: datetime.date object, datetime.date(year,month,day)
     # key: api key
     # First API using, get rough data of asteroids near earth from the given start date to 1 days later
     # data from NASA NeoWs
-    end_date = start_date + datetime.timedelta(days=1)
+    end_date = day_date + datetime.timedelta(days=1)
 
     url = 'https://api.nasa.gov/neo/rest/v1/feed?start_date={}&end_date={}&api_key={}'.format(
-        start_date, end_date, key
+        day_date, end_date, key
     )
     print('Connecting NeoWs...')
     raw_data = requests.get(url).text
@@ -21,7 +21,7 @@ def get_neo_data(start_date, key):
     try:
         asteroids_all = json_data['near_earth_objects']
     except KeyError:
-        print('No data received, please check your start date info and api key.')
+        print('No data received, please check your day date info and api key.')
         return {}
 
     asteroids_size_data = {}
@@ -30,7 +30,7 @@ def get_neo_data(start_date, key):
     # structure:
     # {
     #    aid:{
-    #       estimated_min,estimates_max
+    #       estimated_min,estimated_max
     #    },
     # }
     # asteroid data includes:
@@ -45,7 +45,7 @@ def get_neo_data(start_date, key):
             asteroids_size_data[aid]['estimated_min'] = asteroid['estimated_diameter']['meters']['estimated_diameter_min']
             asteroids_size_data[aid]['estimated_max'] = asteroid['estimated_diameter']['meters']['estimated_diameter_max']
 
-    print('NeoWs data successfully collected. Data start from {} to {}'.format(start_date, end_date))
+    print('NeoWs data successfully collected. Data start from {} to {}'.format(day_date, end_date))
 
     return asteroids_size_data
 
@@ -55,7 +55,7 @@ def get_sentry_data(impact_p):
     #
     # impact_p limit data to those with a impact-probability (IP)
     # greater than or equal to this value
-    # impact_p range: [-10,0]
+    # impact_p range: [0, 10]
     #
     # data from Sentry System API
     ip_min = '1e-{}'.format(impact_p)
