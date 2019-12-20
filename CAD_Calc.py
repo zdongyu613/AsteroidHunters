@@ -11,8 +11,12 @@ def averageVelocity(body):
     total = 0
     for x in body:
         total += x[0]
+        if len(x) > 1:
+            total += x[1]
+            count += 1
         count += 1
     return total/count
+
 
 conn = sqlite3.connect(DB)
 cur = conn.cursor()
@@ -20,29 +24,29 @@ cur = conn.cursor()
 avg1 = {}
 avg2 = {}
 
-Earth_vals1 = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Earth'").fetchall()
+Earth_vals = cur.execute("""SELECT CAD_2018_05.velocity, CAD_2018_10.velocity FROM CAD_2018_05
+JOIN CAD_2018_10 ON CAD_2018_05.body = CAD_2018_05.body WHERE CAD_2018_05.body = 'Earth' AND  CAD_2018_10.body = 'Earth'""").fetchall()
+Moon_vals = cur.execute("""SELECT CAD_2018_05.velocity, CAD_2018_10.velocity FROM CAD_2018_05
+JOIN CAD_2018_10 ON CAD_2018_05.body = CAD_2018_05.body WHERE CAD_2018_05.body = 'Moon' AND  CAD_2018_10.body = 'Moon'""").fetchall()
 Mars_vals1 = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Mars'").fetchall()
 Mercury_vals1 = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Mercury'").fetchall()
-Moon_vals1 = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Moon'").fetchall()
 Venus_vals1 = cur.execute("SELECT velocity FROM CAD_2018_05 WHERE body = 'Venus'").fetchall()
-Earth_vals2 = cur.execute("SELECT velocity FROM CAD_2018_10 WHERE body = 'Earth'").fetchall()
 Mars_vals2 = cur.execute("SELECT velocity FROM CAD_2018_10 WHERE body = 'Mars'").fetchall()
 Mercury_vals2 = cur.execute("SELECT velocity FROM CAD_2018_10 WHERE body = 'Mercury'").fetchall()
-Moon_vals2 = cur.execute("SELECT velocity FROM CAD_2018_10 WHERE body = 'Moon'").fetchall()
 Venus_vals2 = cur.execute("SELECT velocity FROM CAD_2018_10 WHERE body = 'Venus'").fetchall()
 
 avg1['Mercury'] = str(averageVelocity(Mercury_vals1))
 avg1['Venus'] = str(averageVelocity(Venus_vals1))
-avg1['Moon'] = str(averageVelocity(Moon_vals1))
-avg1['Earth'] = str(averageVelocity(Earth_vals1))
+avg1['Moon'] = str(averageVelocity(Moon_vals))
+avg1['Earth'] = str(averageVelocity(Earth_vals))
 avg1['Mars'] = str(averageVelocity(Mars_vals1))
 avg2['Mercury'] = str(averageVelocity(Mercury_vals2))
 avg2['Venus'] = str(averageVelocity(Venus_vals2))
-avg2['Moon'] = str(averageVelocity(Moon_vals2))
-avg2['Earth'] = str(averageVelocity(Earth_vals2))
+avg2['Moon'] = str(averageVelocity(Moon_vals))
+avg2['Earth'] = str(averageVelocity(Earth_vals))
 avg2['Mars'] = str(averageVelocity(Mars_vals2))
 
-with open('calc.txt', 'w+') as outfile:
+with open('CAD_Calc.txt', 'w+') as outfile:
     outfile.write('Average velocities, in km/s, of close-approach objects in May 2018:')
     json.dump(avg1,outfile)
     outfile.write('\n')
@@ -64,7 +68,7 @@ rects1 = ax.bar(x - width/2, velocities1, width, label='May 2018', color = (0.1,
 rects2 = ax.bar(x + width/2, velocities2, width, label='October 2018', color = (0.2, 0.4, 0.6, 0.6))
 
 ax.set_ylabel('Velocity (km/s)')
-ax.set_title('Velocities of Close-Approach Objects')
+ax.set_title('Average Velocity of Close-Approach Objects Near Plantery Bodies')
 ax.set_xticks(x)
 ax.set_xticklabels(bodies)
 ax.set_yticks([0,5,10,15,20,25,30,35,40])

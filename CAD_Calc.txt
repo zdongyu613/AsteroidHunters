@@ -1,0 +1,2 @@
+Average velocities, in km/s, of close-approach objects in May 2018:{"Mercury": "30.2478884056338", "Venus": "16.832178608951182", "Moon": "9.422692622241566", "Earth": "10.484353200066332", "Mars": "11.502857172968373"}
+Average velocities, in km/s, of close-approach objects in October 2018:{"Mercury": "40.3347806035768", "Venus": "14.167059560115373", "Moon": "9.422692622241566", "Earth": "10.484353200066332", "Mars": "19.4111959331276"}
