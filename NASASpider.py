@@ -320,8 +320,77 @@ def calculate_volume_sentry(db):
     plt.figure(1, figsize=(11, 6))
     plt.xlabel('Asteroid ID')
     plt.ylabel('Asteroid Volume')
-    plt.title('50 Near Earth Object Volumes')
+    plt.title('50 Sentry Asteroids Volumes')
     plt.scatter(new_id_list, new_vol_list, color='red')
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
+
+
+def calculate_volume_neo(db):
+    ########################
+    #
+    # Pulling Asteroid ID and volumes
+    # from Asteroid_NASA.db.
+    # Calculating volumes.
+    # Adding to list for plotting.
+    #
+    #########################
+
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+
+    data = cur.execute('''
+    SELECT NEO_2018_05.estimated_min, NEO_2018_05.estimated_max FROM NEO_2018_05 LEFT JOIN  NEO_2018_10
+    ON NEO_2018_05.aid = NEO_2018_10.aid
+    ''')
+
+    volume_list = []
+    asteroid_list = []
+    asteroid_diameter = data.fetchall()
+
+    # V = 4/3piR^3
+
+    for i in asteroid_diameter:
+        radius = (i[0] + i[1])/4
+        volume = (1.33 * 3.14) * (radius * radius * radius)
+        str_volume = str(volume)
+        volume_list.append(str_volume + "\n")
+
+    aid = cur.execute('''
+       SELECT aid FROM NEO_2018_05
+       ''')
+    asteroid_id = aid.fetchall()
+
+    for n in asteroid_id:
+        ast_id = n[0]
+        asteroid_list.append(ast_id)
+
+    # Lists for plotting.
+    # Change range() value for
+    # different output (more or less values).
+
+    new_vol_list = []
+    new_id_list = []
+    for v in range(49):
+        new_vol_list.append(volume_list[v])
+    for d in range(49):
+        new_id_list.append(asteroid_list[d])
+
+    # Write to text file.
+
+    vol_calc = open("volume_calc_neo.txt", "w")
+    for i in volume_list:
+        vol_calc.write(i)
+    vol_calc.close()
+
+    # Plot the first 50 results.
+
+    plt.figure(1, figsize=(11, 6))
+    plt.xlabel('Asteroid ID')
+    plt.ylabel('Asteroid Volume')
+    plt.title('50 Near Earth Object Volumes')
+    plt.scatter(new_id_list, new_vol_list, color='green')
     plt.xticks(rotation=90)
     plt.tight_layout()
     plt.show()

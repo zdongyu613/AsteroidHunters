@@ -39,3 +39,4 @@ for i in range(8):
 
 # calculation and plotting
 calculate_volume_sentry(DB)
+calculate_volume_neo(DB)
