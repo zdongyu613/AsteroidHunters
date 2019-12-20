@@ -283,8 +283,8 @@ def calculate_volume_sentry(db):
     # V = 4/3piR^3
 
     for i in asteroid_diameter:
-        diameter = i[0]
-        volume = (1.33 * 3.14) * (diameter * diameter * diameter)
+        radius = i[0]/2
+        volume = (1.33 * 3.14) * (radius * radius * radius)
         str_volume = str(volume)
         volume_list.append(str_volume + "\n")
 
